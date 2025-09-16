@@ -5,15 +5,35 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'NonWatermark - Remove Watermarks from Images Instantly',
+  title: 'NonWatermark Pro - Advanced AI Watermark Remover',
   description:
-    'Remove watermarks from images in seconds with AI-powered technology. 100% private, no uploads required.',
+    "Remove watermarks from images instantly with the world's most advanced AI technology. 100% private, no uploads, perfect quality.",
   keywords: [
-    'remove watermark',
     'watermark remover',
-    'AI image editing',
+    'remove watermark',
+    'AI watermark removal',
+    'image editor',
+    'photo editor',
+    'watermark eraser',
     'clean images',
+    'remove logo',
+    'remove text from image',
   ],
+  authors: [{ name: 'NonWatermark Pro' }],
+  viewport: 'width=device-width, initial-scale=1',
+  robots: 'index, follow',
+  openGraph: {
+    title: 'NonWatermark Pro - Advanced AI Watermark Remover',
+    description:
+      'Remove watermarks instantly with AI. 100% private, no uploads.',
+    type: 'website',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'NonWatermark Pro',
+    description: 'Remove watermarks instantly with AI',
+  },
 };
 
 export default function RootLayout({

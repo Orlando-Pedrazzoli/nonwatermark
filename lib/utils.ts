@@ -27,8 +27,36 @@ export function downloadFile(blob: Blob, filename: string) {
 }
 
 export function validateImageFile(file: File): boolean {
-  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-  const maxSize = 10 * 1024 * 1024; // 10MB
+  const validTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'image/bmp',
+  ];
+  const maxSize = 50 * 1024 * 1024; // 50MB
 
   return validTypes.includes(file.type) && file.size <= maxSize;
+}
+
+export function getImageDimensions(
+  file: File
+): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.width, height: img.height });
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image'));
+    };
+
+    img.src = url;
+  });
 }

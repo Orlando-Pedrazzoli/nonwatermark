@@ -1,8 +1,19 @@
 'use client';
 
 import React, { useCallback, useState, useRef } from 'react';
-import { Upload, Image as ImageIcon, X } from 'lucide-react';
-import { cn, formatFileSize, validateImageFile } from '@/lib/utils';
+import {
+  Upload,
+  Image as ImageIcon,
+  X,
+  FileImage,
+  Sparkles,
+} from 'lucide-react';
+import {
+  cn,
+  formatFileSize,
+  validateImageFile,
+  getImageDimensions,
+} from '@/lib/utils';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -21,6 +32,11 @@ export default function FileUpload({
 }: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [dimensions, setDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -43,7 +59,7 @@ export default function FileUpload({
   }, []);
 
   const handleDrop = useCallback(
-    (e: React.DragEvent) => {
+    async (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setIsDragOver(false);
@@ -55,9 +71,21 @@ export default function FileUpload({
       const file = files[0];
       if (!validateImageFile(file)) {
         setError(
-          'Please select a valid image file (JPEG, PNG, WebP) under 10MB'
+          'Please select a valid image file (JPEG, PNG, WebP, GIF, BMP) under 50MB'
         );
         return;
+      }
+
+      // Criar preview
+      const previewUrl = URL.createObjectURL(file);
+      setPreview(previewUrl);
+
+      // Obter dimensões
+      try {
+        const dims = await getImageDimensions(file);
+        setDimensions(dims);
+      } catch (err) {
+        console.error('Failed to get dimensions:', err);
       }
 
       onFileSelect(file);
@@ -66,7 +94,7 @@ export default function FileUpload({
   );
 
   const handleFileInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
       if (!files || files.length === 0) return;
 
@@ -75,9 +103,21 @@ export default function FileUpload({
 
       if (!validateImageFile(file)) {
         setError(
-          'Please select a valid image file (JPEG, PNG, WebP) under 10MB'
+          'Please select a valid image file (JPEG, PNG, WebP, GIF, BMP) under 50MB'
         );
         return;
+      }
+
+      // Criar preview
+      const previewUrl = URL.createObjectURL(file);
+      setPreview(previewUrl);
+
+      // Obter dimensões
+      try {
+        const dims = await getImageDimensions(file);
+        setDimensions(dims);
+      } catch (err) {
+        console.error('Failed to get dimensions:', err);
       }
 
       onFileSelect(file);
@@ -95,6 +135,8 @@ export default function FileUpload({
       e.stopPropagation();
       onFileRemove();
       setError(null);
+      setPreview(null);
+      setDimensions(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -120,78 +162,150 @@ export default function FileUpload({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         className={cn(
-          'border-2 border-dashed border-gray-600 rounded-xl p-8 text-center cursor-pointer transition-all duration-300',
-          'hover:border-primary bg-surface hover:bg-surface-hover',
+          'relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300',
+          'bg-gray-950/50 backdrop-blur-sm',
           {
-            'border-primary bg-primary/10': isDragOver,
+            'border-gray-700 hover:border-green-500/50 hover:bg-gray-900/50':
+              !isDragOver && !selectedFile,
+            'border-green-400 bg-green-400/10 scale-[1.02]': isDragOver,
+            'border-green-500 bg-gray-900/80': selectedFile,
             'opacity-50 cursor-not-allowed': isProcessing,
           }
         )}
       >
         {selectedFile ? (
-          <div className='relative'>
-            <div className='flex items-center gap-3 bg-surface-hover rounded-lg p-4'>
-              <ImageIcon className='w-8 h-8 text-primary' />
-              <div className='flex-1 text-left'>
-                <p className='text-white font-medium text-sm truncate'>
+          <div className='space-y-4'>
+            {/* Preview da imagem */}
+            {preview && (
+              <div className='relative mx-auto w-full max-w-md'>
+                <img
+                  src={preview}
+                  alt='Preview'
+                  className='w-full h-48 object-cover rounded-lg shadow-2xl'
+                />
+                {!isProcessing && (
+                  <button
+                    onClick={handleRemoveFile}
+                    className='absolute -top-3 -right-3 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110'
+                  >
+                    <X className='w-4 h-4 text-white' />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Informações do arquivo */}
+            <div className='bg-gray-900 rounded-lg p-4 space-y-2'>
+              <div className='flex items-center justify-center gap-3'>
+                <FileImage className='w-5 h-5 text-green-400' />
+                <div className='text-white font-medium truncate max-w-xs'>
                   {selectedFile.name}
-                </p>
-                <p className='text-gray-400 text-xs'>
-                  {formatFileSize(selectedFile.size)}
-                </p>
+                </div>
+              </div>
+              <div className='flex items-center justify-center gap-4 text-sm text-gray-400'>
+                <span>{formatFileSize(selectedFile.size)}</span>
+                {dimensions && (
+                  <>
+                    <span>•</span>
+                    <span>
+                      {dimensions.width} × {dimensions.height}px
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
-            {!isProcessing && (
-              <button
-                onClick={handleRemoveFile}
-                className='absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center'
-              >
-                <X className='w-3 h-3 text-white' />
-              </button>
-            )}
-
+            {/* Status de processamento */}
             {isProcessing && (
-              <div className='mt-4 text-primary'>
-                <div className='flex items-center justify-center gap-2'>
-                  <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-primary'></div>
-                  <span className='text-sm'>Processing...</span>
+              <div className='flex flex-col items-center gap-3'>
+                <div className='relative'>
+                  <div className='w-16 h-16 rounded-full border-4 border-gray-700'></div>
+                  <div className='absolute inset-0 w-16 h-16 rounded-full border-4 border-green-400 border-t-transparent animate-spin'></div>
+                </div>
+                <div className='text-green-400 font-medium flex items-center gap-2'>
+                  <Sparkles className='w-4 h-4 animate-pulse' />
+                  Removing watermarks...
+                </div>
+                <div className='text-gray-500 text-sm'>
+                  AI is analyzing your image
                 </div>
               </div>
             )}
           </div>
         ) : (
           <>
-            <div className='mb-4 p-4 rounded-full bg-primary/10 inline-block'>
-              <Upload
-                className={cn('w-12 h-12 text-primary', {
-                  'animate-bounce': isDragOver,
-                })}
-              />
+            <div className='mb-6'>
+              <div
+                className={cn(
+                  'w-20 h-20 rounded-2xl mx-auto flex items-center justify-center transition-all duration-300',
+                  'bg-gradient-to-br from-green-500/20 to-green-600/20',
+                  {
+                    'animate-bounce': isDragOver,
+                    'hover:scale-110': !isDragOver,
+                  }
+                )}
+              >
+                <Upload className='w-10 h-10 text-green-400' />
+              </div>
             </div>
-            <h3 className='text-xl font-semibold text-white mb-2'>
-              {isDragOver ? 'Drop your image here' : 'Upload your image'}
+
+            <h3 className='text-2xl font-bold text-white mb-2'>
+              {isDragOver ? 'Drop your image here!' : 'Upload Image'}
             </h3>
-            <p className='text-gray-400 mb-4'>
-              Drag and drop your image here, or click to browse
-            </p>
-            <button className='bg-primary hover:bg-primary-dark text-black font-medium px-6 py-3 rounded-lg transition-colors'>
-              Choose File
+            <div className='text-gray-400 mb-6 max-w-md mx-auto'>
+              Drag and drop your image here, or click to browse. Supports JPEG,
+              PNG, WebP, GIF, and BMP files up to 50MB.
+            </div>
+
+            <button className='bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-black font-medium px-8 py-3 rounded-lg transition-all hover:scale-105 shadow-lg'>
+              Choose Image
             </button>
+
+            {/* Formatos suportados */}
+            <div className='mt-8 flex items-center justify-center gap-6 text-xs text-gray-500'>
+              <div className='flex items-center gap-1'>
+                <div className='w-2 h-2 bg-green-400 rounded-full'></div>
+                JPG/JPEG
+              </div>
+              <div className='flex items-center gap-1'>
+                <div className='w-2 h-2 bg-green-400 rounded-full'></div>
+                PNG
+              </div>
+              <div className='flex items-center gap-1'>
+                <div className='w-2 h-2 bg-green-400 rounded-full'></div>
+                WebP
+              </div>
+              <div className='flex items-center gap-1'>
+                <div className='w-2 h-2 bg-green-400 rounded-full'></div>
+                GIF
+              </div>
+              <div className='flex items-center gap-1'>
+                <div className='w-2 h-2 bg-green-400 rounded-full'></div>
+                BMP
+              </div>
+            </div>
           </>
         )}
       </div>
 
+      {/* Erro */}
       {error && (
-        <div className='mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg'>
-          <p className='text-red-400 text-sm text-center'>{error}</p>
+        <div className='mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg'>
+          <div className='text-red-400 text-sm text-center flex items-center justify-center gap-2'>
+            <X className='w-4 h-4' />
+            {error}
+          </div>
         </div>
       )}
 
+      {/* Dica de privacidade */}
       {!selectedFile && !error && (
-        <p className='text-gray-500 text-xs text-center mt-4'>
-          Your images are processed locally. We never store or see your files.
-        </p>
+        <div className='mt-6 text-center'>
+          <div className='text-gray-500 text-xs flex items-center justify-center gap-2'>
+            <div className='w-2 h-2 bg-green-400 rounded-full animate-pulse'></div>
+            100% Private - Your images never leave your device
+          </div>
+        </div>
       )}
     </div>
   );

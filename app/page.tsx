@@ -5,7 +5,7 @@ import { Sparkles, Shield, Zap } from 'lucide-react';
 import FileUpload from '@/components/file-upload';
 import ImageComparison from '@/components/image-comparison';
 import {
-  watermarkProcessor,
+  advancedWatermarkProcessor as watermarkProcessor,
   ProcessingResult,
 } from '@/lib/watermark-processor';
 

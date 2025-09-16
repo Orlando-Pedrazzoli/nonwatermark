@@ -43,7 +43,6 @@ export default function ImageComparison({
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const sliderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (propOriginalUrl) {
@@ -121,19 +120,10 @@ export default function ImageComparison({
     }
   }, [processedImageUrl, originalFile.name]);
 
-  const handleSliderClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.target === sliderRef.current) return;
-      updateSliderPosition(e.clientX);
-    },
-    [updateSliderPosition]
-  );
-
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
   }, [isFullscreen]);
 
-  // Calcular estatísticas
   const avgConfidence =
     watermarksDetected.length > 0
       ? Math.round(
@@ -143,14 +133,8 @@ export default function ImageComparison({
         )
       : 0;
 
-  const typeCount = watermarksDetected.reduce((acc, w) => {
-    acc[w.type] = (acc[w.type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
   return (
     <div className={`w-full ${className}`}>
-      {/* Estatísticas */}
       <div className='mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4'>
         <div className='bg-gray-900 border border-gray-800 rounded-xl p-4'>
           <div className='text-3xl font-bold text-green-400 mb-1'>
@@ -169,28 +153,11 @@ export default function ImageComparison({
           <div className='text-gray-400 text-sm'>Private Processing</div>
         </div>
         <div className='bg-gray-900 border border-gray-800 rounded-xl p-4'>
-          <div className='text-3xl font-bold text-green-400 mb-1'>
-            {Object.keys(typeCount).length}
-          </div>
-          <div className='text-gray-400 text-sm'>Types Detected</div>
+          <div className='text-3xl font-bold text-green-400 mb-1'>HD</div>
+          <div className='text-gray-400 text-sm'>Quality Output</div>
         </div>
       </div>
 
-      {/* Tipos de watermarks detectados */}
-      {Object.keys(typeCount).length > 0 && (
-        <div className='mb-6 flex flex-wrap gap-2'>
-          {Object.entries(typeCount).map(([type, count]) => (
-            <span
-              key={type}
-              className='px-3 py-1 bg-gray-900 border border-gray-800 rounded-full text-sm text-gray-300'
-            >
-              {type}: {count}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Container de comparação */}
       <div
         className={`relative ${
           isFullscreen
@@ -198,7 +165,6 @@ export default function ImageComparison({
             : 'bg-gray-950 rounded-xl overflow-hidden'
         }`}
       >
-        {/* Botão fullscreen */}
         {!isFullscreen && (
           <button
             onClick={toggleFullscreen}
@@ -209,7 +175,6 @@ export default function ImageComparison({
           </button>
         )}
 
-        {/* Botão sair fullscreen */}
         {isFullscreen && (
           <button
             onClick={toggleFullscreen}
@@ -219,7 +184,6 @@ export default function ImageComparison({
           </button>
         )}
 
-        {/* Botão mostrar/ocultar watermarks */}
         <button
           onClick={() => setShowWatermarks(!showWatermarks)}
           className={`absolute top-4 left-4 z-20 bg-black/70 hover:bg-black/90 text-white px-3 py-2 rounded-lg transition-all text-sm ${
@@ -234,11 +198,9 @@ export default function ImageComparison({
           className={`relative cursor-ew-resize ${
             isFullscreen ? 'w-full h-full' : 'aspect-video'
           }`}
-          onClick={handleSliderClick}
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
         >
-          {/* Imagem processada (fundo) */}
           <div className='absolute inset-0 flex items-center justify-center bg-gray-950'>
             <img
               src={processedImageUrl}
@@ -249,14 +211,8 @@ export default function ImageComparison({
               onLoad={() => setImageLoaded(true)}
               draggable={false}
             />
-            {!imageLoaded && (
-              <div className='absolute inset-0 flex items-center justify-center'>
-                <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-400' />
-              </div>
-            )}
           </div>
 
-          {/* Imagem original (sobreposta, cortada) */}
           <div
             className='absolute inset-0 overflow-hidden pointer-events-none'
             style={{ width: `${sliderPosition}%` }}
@@ -265,9 +221,7 @@ export default function ImageComparison({
               <img
                 src={originalImageUrl}
                 alt='Original'
-                className={`max-w-full max-h-full object-contain ${
-                  imageLoaded ? 'opacity-100' : 'opacity-0'
-                } transition-opacity duration-300`}
+                className='max-w-full max-h-full object-contain'
                 style={{
                   width: containerRef.current?.offsetWidth || '100%',
                   height: containerRef.current?.offsetHeight || '100%',
@@ -277,7 +231,6 @@ export default function ImageComparison({
               />
             </div>
 
-            {/* Overlay de watermarks detectados */}
             {showWatermarks && imageLoaded && (
               <div className='absolute inset-0 pointer-events-none'>
                 {watermarksDetected.map((watermark, index) => (
@@ -285,34 +238,17 @@ export default function ImageComparison({
                     key={index}
                     className='absolute border-2 border-red-500 bg-red-500/20'
                     style={{
-                      left: `${
-                        (watermark.x / containerRef.current!.offsetWidth) * 100
-                      }%`,
-                      top: `${
-                        (watermark.y / containerRef.current!.offsetHeight) * 100
-                      }%`,
-                      width: `${
-                        (watermark.width / containerRef.current!.offsetWidth) *
-                        100
-                      }%`,
-                      height: `${
-                        (watermark.height /
-                          containerRef.current!.offsetHeight) *
-                        100
-                      }%`,
+                      left: `${watermark.x}px`,
+                      top: `${watermark.y}px`,
+                      width: `${watermark.width}px`,
+                      height: `${watermark.height}px`,
                     }}
-                  >
-                    <span className='absolute -top-6 left-0 text-xs bg-red-500 text-white px-1 rounded'>
-                      {watermark.type} ({Math.round(watermark.confidence * 100)}
-                      %)
-                    </span>
-                  </div>
+                  />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Linha do slider */}
           <div
             className='absolute top-0 bottom-0 w-1 bg-gradient-to-r from-green-400 to-green-500 pointer-events-none shadow-2xl'
             style={{
@@ -321,9 +257,7 @@ export default function ImageComparison({
             }}
           />
 
-          {/* Handle do slider */}
           <div
-            ref={sliderRef}
             className='absolute top-1/2 transform -translate-y-1/2 pointer-events-none'
             style={{
               left: `${sliderPosition}%`,
@@ -331,25 +265,15 @@ export default function ImageComparison({
             }}
           >
             <div className='relative'>
-              {/* Círculo central */}
               <div className='w-12 h-12 bg-green-400 rounded-full shadow-2xl flex items-center justify-center pointer-events-auto cursor-ew-resize'>
                 <div className='w-8 h-8 bg-gray-950 rounded-full flex items-center justify-center'>
                   <ChevronLeft className='w-4 h-4 text-green-400 absolute -left-0.5' />
                   <ChevronRight className='w-4 h-4 text-green-400 absolute -right-0.5' />
                 </div>
               </div>
-
-              {/* Indicadores de direção */}
-              <div className='absolute top-1/2 -left-8 transform -translate-y-1/2 text-white/50 pointer-events-none'>
-                <ChevronLeft className='w-5 h-5' />
-              </div>
-              <div className='absolute top-1/2 -right-8 transform -translate-y-1/2 text-white/50 pointer-events-none'>
-                <ChevronRight className='w-5 h-5' />
-              </div>
             </div>
           </div>
 
-          {/* Labels */}
           <div className='absolute top-4 left-20 bg-black/80 backdrop-blur-sm text-white px-4 py-2 rounded-lg font-medium'>
             Original
           </div>
@@ -357,14 +281,12 @@ export default function ImageComparison({
             Cleaned
           </div>
 
-          {/* Indicador de posição */}
           <div className='absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm'>
             Position: {Math.round(sliderPosition)}%
           </div>
         </div>
       </div>
 
-      {/* Controles */}
       <div className='mt-6 flex flex-col sm:flex-row items-center justify-between gap-4'>
         <div className='text-gray-400 text-sm text-center sm:text-left'>
           <p>Drag the slider to compare original and cleaned images</p>
